@@ -42,6 +42,7 @@ public class MakeBp3d0 {
 	protected TA ta;
 	protected En2Ja en2ja;
 	protected MemberOfTreeForConventionalTree memberOfTree;
+	protected ParseOBJName pon;
 	protected OBJInfo objInfo;
 	
 	/** ID->Bp3dEntry **/
@@ -65,15 +66,15 @@ public class MakeBp3d0 {
 			new MemberOfTreeForConventionalTree(fmaobo, ta);
 		this.bp3dTree = new Bp3dTree();
 		
-		ParseOBJName pon = new ParseOBJName();
-		this.objInfo = pon.getOBJInfoEnLong();
+		this.pon = new ParseOBJName();
+		this.objInfo = pon.getOBJInfoEnLong();		
 		
 		this.id2Entry = new TreeMap<String, Bp3dEntry>();
 		this.en2Entry = new TreeMap<String, Bp3dEntry>();
 
 		FileHandler fh = new FileHandler(LOGFILE);
-    fh.setFormatter(new java.util.logging.SimpleFormatter());
-    logger.addHandler(fh);
+		fh.setFormatter(new java.util.logging.SimpleFormatter());
+		logger.addHandler(fh);
 		
 		run();
 	}
@@ -83,7 +84,7 @@ public class MakeBp3d0 {
 		makeOutputDir();
 		
 		/** TAのエントリを対応するFMAエントリに変更してパーツリストに追加する **/
-		addTAEntries();		
+		addTAEntries();
 		System.out.println("addTAEntries():NumOfEntries=" + id2Entry.size());
 		
 		/** kaorif.xlsのエントリとmember-ofを追加 **/
@@ -96,7 +97,7 @@ public class MakeBp3d0 {
 		System.out.println("addOBJAsPrimitive():NumOfEntries=" + id2Entry.size());					
 		
 		/** TAのインデント情報をmember-of階層として取り込む **/
-		makeMemberOfBasedOnTA();		
+		makeMemberOfBasedOnTA();
 		
 		/** kaorif.xlsのmember-ofを追加 **/
 		addKaorifMemberOf();
@@ -111,24 +112,21 @@ public class MakeBp3d0 {
 		
 		/** leafにOBJを持たないmember-ofを削除する →公開用のTree向け**/
 		trimNoOBJMemberOf();							
+								
+		/** NSNに対応するOBJファイルを作成する**/
+		materializeNSN();
 		
 		/** Bp3dEntryの分類を割り当てる **/
 		assignBp3dEntryType();
 
 		/** 最終更新日を取得する **/
 		calcLastUpadte();
-								
-		/** 
-		 * COMPOSITE_PRIMITIVE, COMPOSITE_ANONYMOUSをレンダリング時に組み合わせるのではなく、OBJファイルとして実物化する。 
-		 * ※trimAnonymousParts()の直前に呼び出す 
-		 **/
-		materializeCompositeParts();
-		
+				
 		/** 最後に、AnonymousParts(ID=ANON**)を削除する **/
 		trimAnonymousParts();
 		
 		/** bp3d.txt, memberOf.txtを出力する**/
-		export();		
+		export();
 	}
 
 	/**
@@ -175,8 +173,7 @@ public class MakeBp3d0 {
 
 		for(String child : taTree.getMemberOfs().keySet()){
 			for(String parent : taTree.getParents(child)){
-				if(child.equals(parent)){
-					
+				if(child.equals(parent)){					
 					System.out.println("[Warning]@makeMemberOfBasedOnTA.ConstructBp3d: child and parent are identical=" + child);					
 				}else if(!memberOfTree.getAncestors(child).contains(parent) &&
 							!memberOfTree.getAncestors(parent).contains(child)){
@@ -213,10 +210,14 @@ public class MakeBp3d0 {
 	 * @param ids
 	 * @return
 	 */
+
 	protected Set<String> retainOBJ(Set<String> ids){
 		Set<String> ret = new HashSet<String>();
 		
 		for(String id : ids){
+			if(!id2Entry.containsKey(id)){
+				System.out.println("retainOBJ=" + id);
+			}
 			String en = id2Entry.get(id).getEn();
 			if(this.objInfo.containsKey(en)){
 				ret.add(id);
@@ -233,15 +234,21 @@ public class MakeBp3d0 {
 	 */
 	protected void addEntry(String en) {			
 		String id = "";
+		boolean isNSN = false;
+				
+		if(en.endsWith(", nsn")){
+			isNSN = true;
+			en = en.replace(", nsn", "");
+		}
 		
-		try {						
+		try {
 			if(containedInFMAOrKaorif(en)){  // FMA/Kaorifに含まれるパーツ
 				id = getId(en);
 				if(fmaobo.contains(en) && !fmaobo.isPreferredName(en)){
 					String msg = "Not FMA preferred name" + "\t" + en;
 					logger.log(new LogRecord(Level.WARNING, msg));						
 				}
-				en = getName(id);  // FMAにエントリが存在する場合は、preferred nameになる
+				en = getName(id);  // FMAにエントリが存在する場合は、preferred nameにする
 			}else if(objInfo.containsKey(en)){  // 後ほどappendされる無名パーツ
 				id = getAnonymousId(en);
 			}else{                              // あり得ないはず(原因：OBJファイルのスペルミス）		
@@ -249,29 +256,38 @@ public class MakeBp3d0 {
 				logger.log(new LogRecord(Level.SEVERE, msg));
 				throw new Exception();
 			}
-											
+
+			if(isNSN){
+				id = id + "nsn";
+				en = en + ", nsn";
+			}
+						
 			Bp3dEntry ent = new Bp3dEntry();			
 			ent.setId(id);
 			ent.setEn(en);
 			
-			if(ta.contains(id)){  		/** TA情報を追加 **/			
+			if(ta.contains(id)){  		/** TAの漢字、TAIDを追加 **/			
 				Set<TAEntry> taEnts = ta.getTAByFmaId(id);
 				Set<String> taKanjis = new HashSet<String>();
 				for(TAEntry taEnt : taEnts){
 					taKanjis.add(taEnt.getTaKanji());
 				}
 				ent.setKanji(Bp3dUtility.join(taKanjis, "/"));
-				ent.setKana(" ");   /** TAのかな情報がない ので空白文字１文字**/
+
 				Set<String> taIds = new TreeSet<String>();
 				for(TAEntry taEnt : taEnts){
 					taIds.add(taEnt.getTaId());
 				}
-				ent.setTaId(Bp3dUtility.join(taIds, "/"));			
-			}else if(en2ja.contains(en)){  		/** TA情報がないエントリは、kaorif.xls/en2jaから漢字とかな取得**/
+				ent.setTaId(Bp3dUtility.join(taIds, "/"));
+			}else if(en2ja.contains(en)){  		/** TA情報がないエントリは、kaorif.xls/en2jaから漢字取得**/
 				ent.setKanji(en2ja.getKanji(en));
+			}
+
+			/** kaorif.xls/en2jaから、かな取得**/
+			if(en2ja.contains(en)){
 				ent.setKana(en2ja.getKana(en));
 			}
-				
+							
 			/** OBJファイルのパスとファイル作成日を追加 **/
 			if(objInfo.containsKey(en)){
 				ent.setLastUpdate(objInfo.getLastUpdate(en));
@@ -457,7 +473,28 @@ public class MakeBp3d0 {
 		
 		return false;		
 	}
+
+
+	/**
+	 * bp3dEntが示すパーツが無名パーツだけで出来上がっているか判定する
+	 * @param bp3dEnt
+	 * @return
+	 */
+	protected boolean isComposedOfAnonymousPartsOnly(Bp3dEntry bp3dEnt){
+		String id = bp3dEnt.getId();
+		if(bp3dTree.hasChild(id)){
+			for(String cId : bp3dTree.getChildren(bp3dEnt.getId())){
+				if(!cId.startsWith("ANON")){
+					return false;
+				}
+			}
+			return true;
+		}else{		
+		return false;
+		}
+	}	
 			
+	
 	/**
 	 * 親エントリが存在するかチェックする
 	 * @param id
@@ -583,20 +620,19 @@ public class MakeBp3d0 {
 	 * @param ent
 	 * @return
 	 */	
+	
 	public Set<String> getPrimitiveOBJIds(Bp3dEntry ent){		
 		Set<String> ret = new HashSet<String>();
 		
 		String id = ent.getId();
-		String en = ent.getEn();
 
-		if(objInfo.containsKey(en)){
+		if(ent.hasObj()){
 			ret.add(id);
 		}
 		
 		if(bp3dTree.hasChild(id)){	
 			for(String oId : bp3dTraverse.getOffsprings(id)){				
-				String oEn = this.getEntry(oId).getEn();
-				if(objInfo.containsKey(oEn)){
+				if(this.getEntry(oId).hasObj()){
 					ret.add(oId);
 				}
 			}
@@ -605,6 +641,31 @@ public class MakeBp3d0 {
 		return ret;		
 	}
 
+	
+	/**
+	 * NSNを構成するOBJファイルを求める
+	 * @param ent
+	 * @return
+	 */
+	public Set<String> getNsnMembers(Bp3dEntry ent){		
+		Set<String> ret = new HashSet<String>();
+		
+		String id = ent.getId();
+					
+		if(bp3dTree.hasChild(id)){	
+			for(String cId : bp3dTree.getChildren(id)){
+				String cEn = this.getEntry(cId).getEn();
+				if(objInfo.containsKey(cEn) && cId.startsWith("ANON")){
+					ret.add(cId);
+				}
+			}
+		}
+	
+		return ret;		
+	}
+
+	
+		
 	/**
 	 * 最終更新日を取得する
 	 * @throws Exception
@@ -614,10 +675,17 @@ public class MakeBp3d0 {
 
 		for(Bp3dEntry ent : getAllEntries()){				
 			Date lastUpdate = df.parse("2000/01/01");
+
+/**			
+			if(ent.getEn().equals("midbrain, nsn")){
+				System.out.println(ent.getEn());
+			}
+**/
 			
-			for (String id : getPrimitiveOBJIds(ent)){
+			for (String id : this.getPrimitiveOBJIds(ent)){
 				Date thisDate = getEntry(id).getLastUpdate();
-				if(thisDate.after(lastUpdate)){
+//				System.out.println(getEntry(id).getEn() + ":" + thisDate);
+				if(thisDate != null && thisDate.after(lastUpdate)){
 					lastUpdate = thisDate;
 				}
 			}
@@ -682,30 +750,61 @@ public class MakeBp3d0 {
 	}
 
 	/**
-	 * composite partを以下の２条件のときに、レンダリング時に組み合わせるのではなく、
-	 * OBJファイルとして実物化する。
-	 * 
+	 * NSN(non specified name)をつくる
 	 * １．composite part自身に対するOBJファイルが存在するとき
 	 * ２．子供にanonymous parts(ID=ANNON)が存在するとき
-	 * 
+	 * @throws Exception
 	 */
-	protected void materializeCompositeParts() throws Exception {			
+	protected void materializeNSN() throws Exception {			
 		Map<String, String> outObjPaths = new HashMap<String,String>(); // appendされたOBJファイルへのパス
-				
+						
 		for(Bp3dEntry bp3dEnt : getAllEntries()){
+			String nsnName = "";			
 			String en = bp3dEnt.getEn();
+			String nsnId = "";
+			String id = bp3dEnt.getId();
+			AppendOBJ appender = new AppendOBJ();
+			String objPath = "";
+			
+			if(isComposedOfAnonymousPartsOnly(bp3dEnt)){  // childrenがすべて無名パーツ(ID=ANON)でできている場合は、NSNにせずに、PRIMITIVEにする
+				nsnName = en;
+				nsnId = id;
+			}else if(hasBothOBJandChild(bp3dEnt) || 
+					hasAnonymousParts(bp3dEnt)){  // ( or childrenに無名パーツがある ) and 子ノードが
+				nsnName = en + ", nsn";
+				addEntry(nsnName);
+				nsnId = getEntry(nsnName).getId();
+				bp3dTree.addMemberOf(nsnId, id);
+				bp3dTree.addReverseMemberOf(id, nsnId);
+				bp3dTree.addKaorifMemberOf(nsnId, id);
 
-			if(bp3dEnt.isCompositePrimitive() || bp3dEnt.isCompositeAnonymous()){															
-				AppendOBJ appender = new AppendOBJ();
-				String objPath = this.APPENDDIR + en + ".obj";								
-				appender.setOutFile(objPath);
-				outObjPaths.put(en, objPath);
-								
-				for(String elementId : getPrimitiveOBJIds(bp3dEnt)){
-					appender.append(getEntry(elementId).getObjPath());
-				}
-				appender.end();
+				if(hasBothOBJandChild(bp3dEnt)){  // 自身のobjファイルを無名パーツ(_nsnmember)にして、エントリの子供にする
+					String nsnMember = en + "_nsnmember";				
+					objInfo.add(nsnMember, pon.parseFilename(new File(bp3dEnt.getObjPath())));
+					bp3dEnt.setObjPath(null);
+					addEntry(nsnMember);
+					String nsnMemberId = getEntry(nsnMember).getId();
+					bp3dTree.addMemberOf(nsnMemberId, id);
+					bp3dTree.addReverseMemberOf(id, nsnMemberId);
+					bp3dTree.addKaorifMemberOf(nsnMemberId, id);
+				}												
+			}else{
+				continue;  // NSN作成の必要なし
 			}
+
+			objPath = APPENDDIR + nsnName + ".obj";													
+			outObjPaths.put(nsnName, objPath);
+			
+			appender.setOutFile(objPath);
+			
+			for(String elementId : getNsnMembers(bp3dEnt)){
+				Bp3dEntry element = getEntry(elementId);
+				appender.append(element.getObjPath());
+				bp3dTree.addMemberOf(elementId, nsnId);
+				bp3dTree.addReverseMemberOf(nsnId, elementId);
+				bp3dTree.addKaorifMemberOf(elementId, nsnId);
+			}
+			appender.end();			
 		}
 
 		/** 
@@ -714,11 +813,11 @@ public class MakeBp3d0 {
 		 */
 		for(String en : outObjPaths.keySet()){
 			getEntry(en).setObjPath(outObjPaths.get(en));
-		}
-		
+		}		
 	}
-	
 
+	
+	
 	/** 
 	 * Anonymous partsを削除する
 	 ***/
@@ -745,8 +844,7 @@ public class MakeBp3d0 {
 	 * @param ent
 	 * @return
 	 */
-
-	public boolean isCompositePrimitive(Bp3dEntry ent){
+	public boolean hasBothOBJandChild(Bp3dEntry ent){
 		String id = ent.getId();
 		String en = ent.getEn();
 		if(hasChild(id) && objInfo.containsKey(en)){						
@@ -769,23 +867,14 @@ public class MakeBp3d0 {
 	public void assignBp3dEntryType(){
 		for(Bp3dEntry ent : this.getAllEntries()){
 			String id = ent.getId();
-			String en = ent.getEn();
-			if(isCompositePrimitive(ent)){						
-				ent.setType(Bp3dEntryType.COMPOSITE_PRIMITIVE);
-			}else if(objInfo.containsKey(en)){
-				if(this.containedInFMAOrKaorif(en)){
-					ent.setType(Bp3dEntryType.COMPLETED);
-				}else{
-					ent.setType(Bp3dEntryType.COMPLETED_ANONYMOUS);
-				}
+			if(id.endsWith("nsn")){
+				ent.setType(Bp3dEntryType.NSN);
+			}else if(ent.getObjPath() != null){
+				ent.setType(Bp3dEntryType.COMPLETED);
 			}else if(hasChild(id) == false){
 				ent.setType(Bp3dEntryType.NEED_TO_MAKE);
 			}else{
-				if(hasAnonymousParts(ent)){
-					ent.setType(Bp3dEntryType.COMPOSITE_ANONYMOUS);
-				}else{
-					ent.setType(Bp3dEntryType.COMPOSITE);
-				}
+				ent.setType(Bp3dEntryType.COMPOSITE);
 			}
 		}
 	}
@@ -814,8 +903,11 @@ public class MakeBp3d0 {
 				+ "type" + "\t" + "objPath" + "\n");
 
 		for (Bp3dEntry ent : this.getAllEntries()){
+			String kanji = ent.getKanji();
+			String kana = ent.getKana();
 			bw.write(ent.getId() + "\t" + ent.getEn() + "\t" 
-					+ ent.getKanji() + "\t" + ent.getKana() + "\t"
+					+ (kanji == null ? "" : kanji) + "\t"
+					+ (kana == null ? "" : kana) + "\t"
 					+ ent.getTaId() + "\t"
 					+ ent.getLastUpdateString() + "\t"					
 					+ ent.getType() + "\t"
@@ -847,6 +939,7 @@ public class MakeBp3d0 {
 
 				if(!contains(child) || !contains(parent)){
 					System.out.println(child + "<->" + parent + "*");
+					continue;
 				}
 				
 				bw.write(getEntry(child).getEn() + "\t" + getEntry(parent).getEn() + "\t"

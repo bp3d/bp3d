@@ -5,8 +5,9 @@ import jp.dbcls.bp3d.fma.*;
 public class TABitsEntry implements Cloneable {
 	private String taId = null;
 	private double taTab = 0.0;
-	private String taKanji = null;
 	private String taEn = null;
+	private String taKanji = null;
+	private String taKana = null;
 	private FMAOBOEntry fma = new FMAOBOEntry();
 	private FMAOBOEntry fmaFromEn = new FMAOBOEntry();
 	private String classification = null;
@@ -62,6 +63,20 @@ public class TABitsEntry implements Cloneable {
 
 	public void setTaKanji(String taKanji) {
 		this.taKanji = taKanji;
+	}
+	
+	/**
+	 * @return the taKana
+	 */
+	public String getTaKana() {
+		return taKana;
+	}
+
+	/**
+	 * @param taKana the taKana to set
+	 */
+	public void setTaKana(String taKana) {
+		this.taKana = taKana;
 	}
 
 	public String getTaEn() {

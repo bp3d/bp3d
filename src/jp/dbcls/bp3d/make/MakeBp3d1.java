@@ -29,8 +29,9 @@ public class MakeBp3d1 {
 	   * 　 時間のかかるOBJファイルのコピー、法線の計算をスキップする   (デバッグ用) 
 	 *  運用時はfalse
 	 * **/
-	private boolean SKIP_OBJ_OPERATION = false;
-		
+	private boolean CALC_NORMAL = Boolean.parseBoolean(Bp3dProperties.getString("bp3d.calcnormal"));
+	private boolean CALC_VOLUME = Boolean.parseBoolean(Bp3dProperties.getString("bp3d.calcvolume"));
+	
 	private final String DATADIR = Bp3dProperties.getString("bp3d.datadir")
 	+ "/" + Bp3dProperties.getString("bp3d.dataversion");
 	private final String EXPORTDIR = this.DATADIR + "/export/";
@@ -105,7 +106,7 @@ public class MakeBp3d1 {
 
 				/** VTKを使う場合は、ファイルパスは全てasciiコードでなければならないので、
 			   * FFMP/objの下からexport/objにコピーする **/
-				if(SKIP_OBJ_OPERATION == false){
+				if(CALC_NORMAL == true || CALC_VOLUME == true){
 					Bp3dUtility.copy(objPathFFMP, objPathExport);
 				}
 				
@@ -113,7 +114,7 @@ public class MakeBp3d1 {
 				bp3dEnt.setObjPath(objPathExport);			
 			
 				/** normal情報を付与する (VTK利用)**/
-				if(SKIP_OBJ_OPERATION == false){
+				if(CALC_NORMAL == true){
 					an.run(objPathExport, objPathExport);
 				}
 			}
@@ -168,9 +169,11 @@ public class MakeBp3d1 {
 				pEns.add(id2Order.get(id).toString());
 			} 
 
+			String kanji = ent.getKanji();
+			String kana = ent.getKana();
 			bw.write(ent.getId() + "\t" + ent.getEn() + "\t"
-					+ (ent.getKanji().isEmpty() ? "　" : ent.getKanji()) + "\t"
-					+ (ent.getKana().isEmpty() ? "　" : ent.getKana()) + "\t" + 2 + "\t"
+					+ (kanji == null || kanji.isEmpty() ? "　" : kanji) + "\t"
+					+ (kana == null || kana.isEmpty() ? "　" : kana) + "\t" + 2 + "\t"
 					+ ent.getLastUpdateString() + "\t" + 0 + "\t" + 0 + "\t"
 					+ df.format(ent.getVolume()) + "\t" + ent.getOrganSystem() + "\t"
 					+ Bp3dUtility.join(pEns, "\t") + "\t" + retCode);
@@ -227,7 +230,7 @@ public class MakeBp3d1 {
 		sw.start();
 
 		/** 結果を出力するディレクトリを作成する  **/
-		if(SKIP_OBJ_OPERATION == false){
+		if(CALC_NORMAL == true || CALC_VOLUME == true){
 			makeOutputDir();
 		}
 						
@@ -237,7 +240,7 @@ public class MakeBp3d1 {
 		System.out.println("addInAndNormal() finished at " + sw.getElapsedTimeSecs() + "sec");
 		
 		/** 各OBJの体積を求める **/
-		if(this.SKIP_OBJ_OPERATION == false){
+		if(CALC_VOLUME == true){
 			CalcVolume cv = new CalcVolume(bp3d);
 			cv.calcBp3dVolumes();
 		}

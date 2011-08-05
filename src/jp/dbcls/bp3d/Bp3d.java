@@ -216,7 +216,7 @@ public class Bp3d {
 		String id = ent.getId();
 		
 		if(ent.isCompleted() || ent.isCompletedAnonymous() 
-				|| ent.isCompositePrimitive() || ent.isCompositeAnonymous()){
+				|| ent.isCompositeAnonymous()){
 			ret.add(id);
 		}else{
 			for(String cId : bp3dTree.getChildren(id)){

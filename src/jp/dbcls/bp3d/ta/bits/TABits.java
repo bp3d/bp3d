@@ -24,6 +24,8 @@ THE SOFTWARE.
 package jp.dbcls.bp3d.ta.bits;
 
 import java.io.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -44,60 +46,41 @@ import jp.dbcls.bp3d.util.Bp3dUtility;
  * 1. bitsさんが作成したTAJとFMAの対応表(o101_TAJwFMA.txt)を読み込む
  * 2. fmaobo2.txtに当ててFMAIDとの対応が新たに分かったものを付け加える。
  * 3. is_edit=ADD/DELETEは三橋が追加、削除
+ * 4. 漢字とかなは、http://lifesciencedb.jp/lsdb.cgi?gg=dicよりダウンロードしたファイルから
  * @author ag
  *
  */
 public class TABits {	
 	final String INFILE = Bp3dProperties.getString("bp3d.datadir") + 
-		Bp3dProperties.getString("bp3d.dataversion") + "/conf/TA/o101_TAJwFMA.xls";
+	Bp3dProperties.getString("bp3d.dataversion") + "/conf/TA/o101_TAJwFMA.xls";
 	final String SHEET = "o101_TAJwFMA";
+
+	final String E2JAFILE = Bp3dProperties.getString("bp3d.datadir") + 
+		Bp3dProperties.getString("bp3d.dataversion") + "/conf/TA/TerminologiaAnatomicaJaponica13ed_sjis.csv";
+	Map<String, String> japaneseEquivalentForm2kana = new HashMap<String, String>();
+	Map<String, String> japaneseDisambiguatedForm2kana = new HashMap<String, String>();
+	Map<String, String> en2kana = new HashMap<String, String>();
+	Map<String, String> en2japaneseDisambiguatedForm = new HashMap<String, String>();
 	
 	final String OUTFILE = Bp3dProperties.getString("bp3d.datadir") + 
 		Bp3dProperties.getString("bp3d.dataversion") + "/conf/TA/ta2fma.txt";
 
-	List<TABitsEntry> entries = new ArrayList<TABitsEntry>();
-
-/**	
-	Map<String, Set<String>> en2Entry = new TreeMap<String, Set<String>>();
-	Map<String, Set<String>> taId2FmaId = new TreeMap<String, Set<String>>();
-**/
-	
+	List<TABitsEntry> entries = new ArrayList<TABitsEntry>();	
+		
 	FMAOBO fmaobo;
 			
 	public TABits() throws Exception{
 		this.fmaobo = new FMAOBO();
-		readXls(INFILE, SHEET);
+		readTerminologiaAnatomicaJaponica13ed();
+		readXls();
 	}
 
 	public TABits(FMAOBO fmaobo) throws Exception{
 		this.fmaobo = fmaobo;
-		readXls(INFILE, SHEET);
+		readTerminologiaAnatomicaJaponica13ed();
+		readXls();
 	}
 		
-	/**
-	 * key→{value1, value2}のリストに追加する
-	 * @param key
-	 * @param value
-	 */
-	private void addOne2N(Map<String, Set<String>>links, String key, String value){
-		if(!links.containsKey(key)){
-			links.put(key, new HashSet<String>());
-		}
-		links.get(key).add(value);
-	}
-	
-	/**
-	 * key→{value1, value2}のリストに追加する
-	 * @param key
-	 * @param value
-	 */
-	private void addOne2N(Map<String, List<TABitsEntry>>links, String key, TABitsEntry value){
-		if(!links.containsKey(key)){
-			links.put(key, new ArrayList<TABitsEntry>());
-		}
-		links.get(key).add(value);
-	}		
-	
 	/**
 	 * TA->FMAのリスト(TAのIDの昇順)を返す
 	 * @return
@@ -118,14 +101,12 @@ public class TABits {
 
 	/**
 	 * o101_TAJwFMA.xlsを読み込む
-	 * @param xlsFile
-	 * @param sheetName
 	 * @throws Exception
 	 */
-	public void readXls(String xlsFile, String sheetName) throws Exception {
-		POIFSFileSystem filein = new POIFSFileSystem(new FileInputStream(xlsFile));
+	public void readXls() throws Exception {
+		POIFSFileSystem filein = new POIFSFileSystem(new FileInputStream(INFILE));
 		HSSFWorkbook wb = new HSSFWorkbook(filein);
-		HSSFSheet sheet = wb.getSheet(sheetName);
+		HSSFSheet sheet = wb.getSheet(SHEET);
 
 		for (int i = 1; i < sheet.getLastRowNum() + 1; i++) {					
 			HSSFRow row = sheet.getRow(i);
@@ -137,7 +118,7 @@ public class TABits {
 			}
 			j++;
 			
-			/** edit=DELTEは読み込まない **/
+			/** edit=DELETEは読み込まない **/
 			if(edit.equals(TABitsEntry.DELETE)){
 				continue;
 			}
@@ -157,14 +138,25 @@ public class TABits {
 						
 			String taKanji = row.getCell(j++).getRichStringCellValue().toString().trim();
 			String taEn = row.getCell(j++).getRichStringCellValue().toString().trim().replace("[*]", "");
+
+			String taKana = "";
+			if(japaneseDisambiguatedForm2kana.containsKey(taKanji)){
+				taKana = japaneseDisambiguatedForm2kana.get(taKanji);
+			}else if(japaneseEquivalentForm2kana.containsKey(taKanji)){
+				taKana = japaneseEquivalentForm2kana.get(taKanji);
+			}else if(en2kana.containsKey(taEn)){
+				taKana = en2kana.get(taEn);
+			}
+			
 			List<String> fmaIds = Arrays.asList(row.getCell(j++).getRichStringCellValue().toString().replaceAll(":", "").trim().split("[|]"));
 			String fmaOBOName = row.getCell(j++).getRichStringCellValue().toString().trim().replaceAll(":", "");
-			
+					
 			TABitsEntry template = createTAEntry();
 			template.setTaId(taId);
 			template.setTaTab(taTab);
-			template.setTaKanji(taKanji);
 			template.setTaEn(taEn);
+			template.setTaKanji(taKanji);
+			template.setTaKana(taKana);
 			
 			if(fmaOBOName.contains("NONE")){	// FMAOBONAME="NONE"の場合は、TA英語とfmaobo2の対応を調べる						
 				Set<FMAOBOEntry> hits = new HashSet<FMAOBOEntry>();				
@@ -212,6 +204,30 @@ public class TABits {
 		}
 	}
 		
+	public void readTerminologiaAnatomicaJaponica13ed() throws Exception {
+		FileInputStream is = new FileInputStream(E2JAFILE);
+		InputStreamReader in = new InputStreamReader(is, "MS932");
+		BufferedReader br = new BufferedReader(in);
+		String line = br.readLine(); // read header
+						
+		while ((line = br.readLine()) != null) {
+			if(line.startsWith("#")){ continue; }
+			String[] data = Pattern.compile(",").split(line);
+			String en = data[1].trim();
+			String japaneseEquivalentForm = data[2].trim().replaceAll("；",";");
+			String japaneseDisambiguatedForm = data[3].trim().replaceAll("；",";");
+			String kana = data[4].trim();
+			en2kana.put(en, kana);
+			japaneseEquivalentForm2kana.put(japaneseEquivalentForm, kana);
+			japaneseDisambiguatedForm2kana.put(japaneseDisambiguatedForm, kana);
+		}
+		
+		br.close();
+		in.close();
+		is.close();
+	}
+	
+	
 	/**
 	 * 
 	 * @param outfile
@@ -222,13 +238,15 @@ public class TABits {
 		OutputStreamWriter out = new OutputStreamWriter(os, "MS932");		
 		BufferedWriter bw = new BufferedWriter(out);				
 				
-		bw.write("#TA_ID\tTAB\tJNAME\tENAME\tFMA_ID\tFMA_En\tTYPE\n");		
+		bw.write("#TA_ID\tTAB\tENAME\tKANJI\tKANA\tFMA_ID\tFMA_En\tTYPE\n");
 		
 		for(TABitsEntry taEnt : this.getEntries()){
 			bw.write(taEnt.getTaId() + "\t");
 			bw.write(taEnt.getTaTab() + "\t");
+			bw.write(taEnt.getTaEn() + "\t");
 			bw.write(taEnt.getTaKanji() + "\t");
-			bw.write(taEnt.getTaEn() + "\t");			
+			bw.write(taEnt.getTaKana() + "\t");
+
 			FMAOBOEntry fmaEnt = taEnt.getFma();
 			if(fmaEnt != null){
 				bw.write(fmaEnt.getId() + "\t" + fmaEnt.getName() + "\t");

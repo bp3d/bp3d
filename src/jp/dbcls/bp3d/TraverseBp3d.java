@@ -72,7 +72,7 @@ public class TraverseBp3d {
 		return results;			
 	}
 	
-	public Set<String> getOffspringsLoop(String id, Stack<String> path) {
+	private Set<String> getOffspringsLoop(String id, Stack<String> path) {
 		Set<String> results = new HashSet<String>();
 
 		/** ループのチェック **/
@@ -121,7 +121,7 @@ public class TraverseBp3d {
 	}
 	
 	
-	public Set<String> getAncestorsLoop(String id, Stack<String> path) {								
+	private Set<String> getAncestorsLoop(String id, Stack<String> path) {								
 		Set<String> results = new HashSet<String>();
 		
 		/** ループのチェック **/
@@ -153,13 +153,17 @@ public class TraverseBp3d {
 	
 	/**
 	 * Loop Pathを表示する
-	 * @param fmaIds
+	 * @param bp3dIds
 	 */
-	private List<String> displayLoopPath(List<String> fmaIds){
-		List<String> fmaNames = new ArrayList<String>();
-		for(String fmaId: fmaIds){
-			fmaNames.add(fmaobo.getById(fmaId).getName());
+	private List<String> displayLoopPath(List<String> ids){
+		List<String> names = new ArrayList<String>();
+		for(String id: ids){
+			if(fmaobo.contains(id)){
+				names.add(fmaobo.getById(id).getName());
+			}else{
+				names.add(id);
+			}
 		}
-		return fmaNames;
+		return names;
 	}
 }

@@ -118,7 +118,8 @@ public class OBJConf {
 
 			j++;
 
-			String ver = Double.toString(row.getCell(j++).getNumericCellValue());
+//			String ver = Double.toString(row.getCell(j++).getNumericCellValue());
+			String ver = row.getCell(j++).getRichStringCellValue().toString().trim();
 			String dir = row.getCell(j++).getRichStringCellValue().toString().trim();
 			String cly = row.getCell(j++).getRichStringCellValue().toString().trim()
 					.replace(".cly", "");

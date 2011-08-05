@@ -7,8 +7,9 @@ import jp.dbcls.bp3d.fma.*;
 public class TAEntry implements Cloneable {
 	private String taId = null;
 	private double taTab = 0;
-	private String taKanji = null;
 	private String taEn = null;
+	private String taKanji = null;
+	private String taKana = null;
 	private String classification = null;
 	private boolean existsPoly = false;
 	private List<TAEntry> containedPoly = new ArrayList<TAEntry>();
@@ -41,6 +42,14 @@ public class TAEntry implements Cloneable {
 		this.taTab = taTab;
 	}
 
+	public String getTaEn() {
+		return taEn;
+	}
+
+	public void setTaEn(String taEn) {
+		this.taEn = taEn;
+	}
+
 	public String getTaKanji() {
 		return taKanji;
 	}
@@ -48,13 +57,19 @@ public class TAEntry implements Cloneable {
 	public void setTaKanji(String taKanji) {
 		this.taKanji = taKanji;
 	}
-
-	public String getTaEn() {
-		return taEn;
+		
+	/**
+	 * @return the taKana
+	 */
+	public String getTaKana() {
+		return taKana;
 	}
 
-	public void setTaEn(String taEn) {
-		this.taEn = taEn;
+	/**
+	 * @param taKana the taKana to set
+	 */
+	public void setTaKana(String taKana) {
+		this.taKana = taKana;
 	}
 
 	public String getClassification() {

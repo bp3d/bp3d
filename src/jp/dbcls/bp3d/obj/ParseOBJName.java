@@ -40,15 +40,15 @@ public class ParseOBJName {
 	public ParseOBJName(String logDir) throws Exception {
 		this.objInfoEnLong = new OBJInfo();
 
-		OBJConf stlConf = new OBJConf();
-		this.objDirs = stlConf.getOBJDirs();
-		this.objEditDirs = stlConf.getOBJEditDirs();
+		OBJConf objConf = new OBJConf();
+		this.objDirs = objConf.getOBJDirs();
+		this.objEditDirs = objConf.getOBJEditDirs();
 		this.abbrev2Long = new Abbrev();
 		this.correction = new Correction();
 		this.ignore = new Ignore();
 
 		makeOBJList();
-
+		
 		this.logDir = logDir;
 		write(); // ログを出力
 	}
@@ -124,7 +124,7 @@ public class ParseOBJName {
 	 * @param objFile
 	 * @throws Exception
 	 */
-	public void parseFilename(File objFile) throws Exception {
+	public OBJInfoEntry parseFilename(File objFile) throws Exception {
 		/**
 		 * OBJファイルのパス名の例 bp3d.objdir/081219-life science body-kf/0.01/081219-life
 		 * science body-kf-appendix.obj filename =
@@ -140,7 +140,7 @@ public class ParseOBJName {
 		/** *.obj終わらないものは無視, *.objで終わる場合は、.objを取る **/
 		if (!filename.endsWith(".obj")) {
 			System.err.println("No obj file found:" + filename);
-			return;
+			return null;
 		} else {
 			filename = filename.replaceFirst(".obj$", "");
 		}
@@ -154,7 +154,7 @@ public class ParseOBJName {
 		/** ignore listに入っていれば無視する **/
 		if (ignore.isEgnored(en, dirname)) {
 			ignore.setApplied(en, dirname);
-			return;
+			return null;
 		}
 
 		/** 正誤表による変換 **/
@@ -164,8 +164,8 @@ public class ParseOBJName {
 		String longForm = abbrev2Long.getLongForm(enCorrected);
 
 		/** LongFormからleft/rightを抽出する **/
-		String leftRight = this.getLeftRight(longForm);
-
+		String leftRight = getLeftRight(longForm);
+		
 		/** ObjInfoオブジェクトにこれらの情報を詰め込む **/
 		OBJInfoEntry objInfo = new OBJInfoEntry();
 		objInfo.setEn(en);
@@ -175,54 +175,7 @@ public class ParseOBJName {
 		objInfo.addDate(updateDate);
 		objInfo.addDir(absolutePath);
 
-		/** ObjInfoSetに追加 **/
-		objInfoEnLong.add(longForm, objInfo);
-	}
-
-	/**
-	 * Appendして作ったOBJファイル名(e.g. appendix.obj)をparse
-	 * 
-	 * @param objFile
-	 * @throws Exception
-	 */
-	public void parseAppendedFilename(File objFile) throws Exception {
-		/**
-		 * OBJファイルのパス名の例 FFMP/appended/110501-appended_cerebellum.obj
-		 * 
-		 */
-		String filename = objFile.getName();
-		String dirname = objFile.getParentFile().getParentFile().getName();
-
-		/** OBJファイルの絶対パス **/
-		String absolutePath = objFile.getAbsolutePath();
-
-		/** *.obj終わらないものは無視, *.objで終わる場合は、.objを取る **/
-		if (!filename.endsWith(".obj")) {
-			return;
-		} else {
-			filename = filename.replaceFirst(".obj$", "");
-		}
-
-		/** 最終更新日の取得 **/
-//		String updateDate = getClayDate(dirname);
-
-		/** 臓器名の取得 **/
-		String en = getOrganName(filename, dirname);
-		System.out.println("filename=" + filename);
-		System.out.println("dirname=" + dirname);
-		System.out.println("en=" + en);
-		
-		/** objInfoオブジェクトにこれらの情報を詰め込む **/
-		OBJInfoEntry objInfo = new OBJInfoEntry();
-		objInfo.setEn(en);
-		objInfo.setEnCorrected(en);
-		objInfo.setEnLong(en);
-//		objInfo.addDate(updateDate);
-		objInfo.addDir(absolutePath);
-		objInfo.setIsAppended(true);
-
-		/** ObjInfoSetに追加 **/
-		objInfoEnLong.add(en, objInfo);
+		return objInfo;
 	}
 
 	/**
@@ -334,7 +287,10 @@ public class ParseOBJName {
 				if (objFile.isDirectory()) {
 					continue;
 				}
-				parseFilename(objFile); // OBJファイル名のパース
+				OBJInfoEntry objInfo = parseFilename(objFile); // OBJファイル名のパース
+				if(objInfo != null){
+					objInfoEnLong.add(objInfo.getEnLong(), objInfo); // ObjInfoSetに追加
+				}
 				isParsed = true;
 			}
 
@@ -343,9 +299,6 @@ public class ParseOBJName {
 				System.err.println("ParseOBJName: no OBJs to parse at " + objDirStr);
 			}
 		}
-
-		/** appendして作ったOBJファイル(appendedディレクトリ以下）をリストに加える **/
-//		makeAppendedOBJList();
 				
 		/** conf/objEdit.confに記述されたディレクトリのOBJを読み込む **/
 		for (String objDirStr : objEditDirs) {
@@ -362,35 +315,20 @@ public class ParseOBJName {
 				if (objFile.isDirectory()) {
 					continue;
 				}
-				parseFilename(objFile);
+				OBJInfoEntry objInfo = parseFilename(objFile); // OBJファイル名のパース
+				if(objInfo != null){
+					objInfoEnLong.add(objInfo.getEnLong(), objInfo); // ObjInfoSetに追加
+				}
 				isParsed = true;
-			}
 
+			}
+			
 			/** パースするべきOBJファイルがない場合に警告 **/
 			if (isParsed == false) {
 				System.err.println("ParseOBJName: no OBJs to parse at " + objDirStr);
 			}
 		}
 	}
-
-	/**
-	 * FFMP/appended/をスキャンして、AppendでつくるOBJファイルのリストを作成する
-	 * @throws Exception
-	 */
-	public void makeAppendedOBJList() throws Exception {
-		String appendedDirStr = Bp3dProperties.getString("bp3d.datadir") + "/"
-				+ Bp3dProperties.getString("bp3d.dataversion") + "/FFMP/appended/";
-
-		File appendedDir = new File(appendedDirStr);
-
-		if (appendedDir.exists()) {
-			File objDir = new File(appendedDir.getAbsolutePath() + "/obj");
-			for (File objFile : objDir.listFiles()) {
-				parseAppendedFilename(objFile); // OBJファイル名のパース
-			}
-		}
-	}
-	
 
 	/**
 	 * テストコード
@@ -406,16 +344,8 @@ public class ParseOBJName {
 				+ Bp3dProperties.getString("bp3d.dataversion") + "/logs/MakeBp3d0";
 
 		ParseOBJName pon = new ParseOBJName(logDir);
-
-		OBJInfo objInfoSetEnLong = pon.getOBJInfoEnLong();
-		if(objInfoSetEnLong.containsKey("habenula")){
-			System.out.println("habenula is contained");
-		}
-/**
-		String en = "colon";
-		OBJInfoEntry inf = objInfoSetEnLong.get(en);
-		inf.display();
-**/
+		pon.write();
+		
 		sw.stop();
 
 		System.out.println("ParseOBJName completed: elapsed time="

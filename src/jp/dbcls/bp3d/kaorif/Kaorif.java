@@ -40,13 +40,10 @@ public class Kaorif {
 	
 	protected Bp3dTree bp3dTree = new Bp3dTree();
 
-	private ParseOBJName pon = new ParseOBJName();
-	private OBJInfo objInfo = pon.getOBJInfoEnLong();
-	
 	public Kaorif() throws Exception {
 		FileHandler fh = new FileHandler(LOGFILE);
-    fh.setFormatter(new java.util.logging.SimpleFormatter());
-    logger.addHandler(fh);
+		fh.setFormatter(new java.util.logging.SimpleFormatter());
+		logger.addHandler(fh);
 		
 		readFile();
 	}

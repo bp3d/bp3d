@@ -124,6 +124,7 @@ public class En2Ja {
 	 * @param punc
 	 * @return
 	 */
+/**	
 	public static String addSpaceAfterPunctuation(String pieceName, String punc) {
 		String ret = "";
 		int fromIdx = 0;
@@ -135,13 +136,14 @@ public class En2Ja {
 			}
 			ret += pieceName.substring(fromIdx, toIdx + 1);
 			fromIdx = toIdx + 1;
-			/** 句読点の後がスペースでない場合は、スペースを挿入 **/
+//			句読点の後がスペースでない場合は、スペースを挿入 
 			if (!pieceName.startsWith(" ", fromIdx)) {
 				ret += " ";
 			}
-		}
+		}		
 		ret += pieceName.substring(fromIdx);
 
 		return ret;
 	}
+**/
 }

@@ -45,8 +45,8 @@ public class AddNormal {
 	}
 
 	public static void main(String[] args) throws Exception {
-		String inOBJ = "D:/bp3d/2.1/FFMP/obj/101224-brain/0.01/101224-brain_superior_parietal_lobule_precuneus_L.obj";
-		String outOBJ = "D:/bp3d/data/test/101224-brain_superior_parietal_lobule_precuneus_L.obj";
+		String inOBJ = Bp3dProperties.getString("bp3d.testdatadir") + "/101224-brain_superior_parietal_lobule_precuneus_L.obj";
+		String outOBJ = Bp3dProperties.getString("bp3d.testdatadir") + "/101224-brain_superior_parietal_lobule_precuneus_L_out.obj";
 
 		AddNormal an = new AddNormal();
 		an.run(inOBJ, outOBJ);

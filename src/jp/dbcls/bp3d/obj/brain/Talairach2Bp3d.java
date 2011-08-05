@@ -29,6 +29,7 @@ import jp.dbcls.bp3d.Bp3dProperties;
 import jp.dbcls.bp3d.util.StopWatch;
 import jp.dbcls.bp3d.util.VTK2OBJ;
 
+import java.util.*;
 import vtk.*;
 
 /**
@@ -43,11 +44,11 @@ public class Talairach2Bp3d {
 	+ "/" + Bp3dProperties.getString("bp3d.dataversion");
 	private final static String TMPFILE = Bp3dProperties.getString("bp3d.tmpvtkfile");	
 
-	private final static String INDIR1 = DATADIR + "/FFMP/obj/101224-brain/0.01";
-	private final static String OUTDIR1 = DATADIR + "/FFMP/talairach2bp3d/101224-brain/0.01";	
-	private final static String INDIR2 = DATADIR + "/FFMP/obj/101224-brain/0.02";
-	private final static String OUTDIR2 = DATADIR + "/FFMP/talairach2bp3d/101224-brain/0.02";	
-
+	private final static String INDIR = DATADIR + "/FFMP/obj/101224-brain/";
+	private final static String OUTDIR = DATADIR + "/FFMP/talairach2bp3d/101224-brain/";	
+	
+	private List<String> reductionRatios;
+	
 	static {
 		System.loadLibrary("vtkCommonJava");
 		System.loadLibrary("vtkFilteringJava");
@@ -59,7 +60,12 @@ public class Talairach2Bp3d {
 		System.loadLibrary("vtkViewsJava");
 	}
 	
-	public Talairach2Bp3d() throws Exception {}
+	public Talairach2Bp3d() throws Exception {
+		this.reductionRatios = new ArrayList<String>();
+		this.reductionRatios.add("0.01");		
+		this.reductionRatios.add("0.02");
+		this.reductionRatios.add("0.05");		
+	}
 	
 	public void rotate(String inFile, String outFile) throws Exception {
 		double pcX = -1.9411; // PC(posterior comissure)のX座標
@@ -74,8 +80,7 @@ public class Talairach2Bp3d {
 		trans.Translate(pcX, pcY, pcZ);
 		trans.RotateX(-rotateAngle);
 		trans.Translate(-pcX, -pcY, -pcZ);
-		
-		
+				
 		vtkTransformPolyDataFilter tf = new vtkTransformPolyDataFilter();
 		tf.SetInputConnection(reader.GetOutputPort());
 		tf.SetTransform(trans);
@@ -89,22 +94,15 @@ public class Talairach2Bp3d {
 	}
 		
 	public void run() throws Exception {			
-		File inDir = new File(INDIR1);		
-		for(String inObj : inDir.list()){	
-			String inObjPath = INDIR1 + "/" + inObj;
-			String outObjPath = OUTDIR1 + "/" + inObj;
-			System.out.println(inObjPath + "->" + outObjPath);
+		for(String reductionRatio : reductionRatios){
+			File inDir = new File(INDIR + "/" + reductionRatio);		
+			for(String inObj : inDir.list()){	
+				String inObjPath = inDir.getAbsolutePath() + "/" + inObj;
+				String outObjPath = OUTDIR + "/" +reductionRatio + "/" + inObj;
+				System.out.println(inObjPath + "->" + outObjPath);
 
-			rotate(inObjPath, outObjPath);			
-		}				
-
-		inDir = new File(INDIR2);		
-		for(String inObj : inDir.list()){	
-			String inObjPath = INDIR2 + "/" + inObj;
-			String outObjPath = OUTDIR2 + "/" + inObj;
-			System.out.println(inObjPath + "->" + outObjPath);
-
-			rotate(inObjPath, outObjPath);			
+				rotate(inObjPath, outObjPath);			
+			}
 		}
 	}
 	

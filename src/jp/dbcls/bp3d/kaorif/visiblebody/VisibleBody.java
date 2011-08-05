@@ -30,6 +30,8 @@ import jp.dbcls.bp3d.kaorif.visiblebody.nerves.*;
 import jp.dbcls.bp3d.kaorif.visiblebody.vessels.*;
 
 /**
+ * VisibleBodyVessselsとVisibleBodyNervesをまとめるラッパークラス
+ * 
  * @author ag
  *
  */

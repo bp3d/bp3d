@@ -23,8 +23,7 @@ public class FMAOBO {
 	public SortedMap<String, String> idOnly= new TreeMap<String, String>();
 	
 	public FMAOBO() throws IOException {
-//		readFile(Bp3dProperties.getString("bp3d.fma3file"));
-		readFile(Bp3dProperties.getString("bp3d.fma2file"));
+		readFile(Bp3dProperties.getString("bp3d.fmafile"));
 	}
 
 	public FMAOBO(String fmafile) throws IOException {

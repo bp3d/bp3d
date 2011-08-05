@@ -17,7 +17,8 @@ import jp.dbcls.bp3d.Bp3dProperties;
 import jp.dbcls.bp3d.obj.OBJConf;
 
 /**
- * FFMがインストールされているPCのクレイファイル保存ディレクトリのファイルリストを作成する
+ * FreeFormModellingPlus(FFMP)がインストールされているPCのクレイファイル保存ディレクトリのファイルリストを作成する
+ * conf/kaorif.xlsのsystem_clayシートにして使う
  * 
  * @author mituhasi
  * 
@@ -31,7 +32,6 @@ public class MakeSystemClyList {
 			+ Bp3dProperties.getString("bp3d.dataversion");
 
 	String clyDirStr;
-	String objDirStr;
 
 	/** kaorifにあるclay path, isUsedのペア **/
 	Map<String, Clay> kaorif = new HashMap<String, Clay>();
@@ -45,9 +45,6 @@ public class MakeSystemClyList {
 	OBJConf objConf;
 
 	MakeSystemClyList() throws Exception {
-		this.objDirStr = Bp3dProperties.getString("bp3d.objdir") + "/";
-		this.objDirStr = this.objDirStr.replace("/", pathSeparator);
-
 		this.objConf = new OBJConf();
 		this.outFile = Bp3dProperties.getString("bp3d.datadir")
 				+ pathSeparator + Bp3dProperties.getString("bp3d.dataversion")

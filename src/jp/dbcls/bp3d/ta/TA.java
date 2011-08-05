@@ -148,13 +148,14 @@ public class TA {
 			ent.setTaId(taId);
 			double taTab = Double.parseDouble(data[1].trim().replaceAll(">", ""));
 			ent.setTaTab(taTab);
-			ent.setTaKanji(data[2].trim());
-			ent.setTaEn(data[3].trim());
+			ent.setTaEn(data[2].trim());
+			ent.setTaKanji(data[3].trim());
+			ent.setTaKana(data[4].trim());
 
 			this.taId2entry.put(taId, ent);
 			this.entries.add(ent);
 			
-			String fmaId = data[4].trim();
+			String fmaId = data[5].trim();
 						
 			if(!fmaId.equals("null")){
 				addOne2N(fmaId2entry, fmaId, ent);
@@ -222,6 +223,7 @@ public class TA {
 			System.out.print(taId + ",");
 			System.out.print(tfe.getTaTab() + ",");
 			System.out.print(tfe.getTaKanji() + ",");
+			System.out.print(tfe.getTaKana() + ",");
 			System.out.print(tfe.getTaEn() + ",");
 			
 			Set<String> fmaIds = new HashSet<String>();
@@ -263,9 +265,9 @@ public class TA {
 	 */
 	public static void main(String[] args) throws Exception {
 		TA ta = new TA(new FMAOBO());
-		System.out.println(ta.contains("FMA7207"));
+		System.out.println(ta.contains("FMA61906"));
 //		ta.export();
-//		ta.display();
+		ta.display();
 		TATree tree = ta.getTree();
 		String ROOT_PART = "FMA20394"; // human body
 		System.out.println("parant of ROOT_PART=" + tree.getParents(ROOT_PART));				

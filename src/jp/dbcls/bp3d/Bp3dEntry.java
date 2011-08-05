@@ -120,16 +120,16 @@ public class Bp3dEntry {
 		this.objPath = objPath;
 	}
 
+	public boolean hasObj(){
+		return objPath != null && !objPath.isEmpty();
+	}
+	
 	public Set<Bp3dEntry> getToDivide() {
 		return toDivide;
 	}
 
 	public void addToDivide(Bp3dEntry toDivide) {
 		this.toDivide.add(toDivide);
-	}
-
-	public boolean isCompositePrimitive(){
-		return getType().equals(Bp3dEntryType.COMPOSITE_PRIMITIVE);
 	}
 
 	public boolean isComposite(){

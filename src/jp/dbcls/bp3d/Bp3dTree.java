@@ -4,6 +4,7 @@ import java.util.*;
 
 /**
  * Bp3dのmember-of情報を保持するクラス
+ * 英語名ではなく、ID(FMA/BP)を持っている
  * 
  * @author mituhasi
  * 
