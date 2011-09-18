@@ -78,7 +78,7 @@ public class TraverseBp3d {
 		/** ループのチェック **/
 		if(path.contains(id)){
 			path.push(id);
-			System.out.println("loop found at getOffspringsLoop:" + displayLoopPath(path));
+			System.out.println("loop found at getOffspringsLoop.TraverseBp3d:" + displayLoopPath(path));
 			return results;
 		}
 		path.push(id);
@@ -127,7 +127,7 @@ public class TraverseBp3d {
 		/** ループのチェック **/
 		if(path.contains(id)){
 			path.add(id);
-			System.out.println("loop found at getAncestorsLoop:" + displayLoopPath(path));
+			System.out.println("loop found at getAncestorsLoop.TraverseBp3d:" + displayLoopPath(path));
 			return results;
 		}
 		path.add(id);		

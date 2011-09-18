@@ -2,6 +2,8 @@ package jp.dbcls.bp3d.fma.tree;
 
 import java.util.*;
 
+import org.eclipse.core.runtime.Path;
+
 import jp.dbcls.bp3d.fma.*;
 import jp.dbcls.bp3d.util.Bp3dUtility;
 
@@ -13,6 +15,8 @@ import jp.dbcls.bp3d.util.Bp3dUtility;
  * 
  */
 public abstract class TraverseFMA {
+	boolean isDebug = false;
+	
 	protected FMAOBO fmaobo = null;
 	protected Map<String, Set<FMAOBOEntry>> offsprings = new HashMap<String, Set<FMAOBOEntry>>();
 	protected Map<String, Set<FMAOBOEntry>> ancestors = new HashMap<String, Set<FMAOBOEntry>>();
@@ -25,6 +29,21 @@ public abstract class TraverseFMA {
 		this.fmaobo = fmaobo;
 	}
 	
+	
+	/**
+	 * @return the isDebug
+	 */
+	public boolean isDebug() {
+		return isDebug;
+	}
+
+	/**
+	 * @param isDebug the isDebug to set
+	 */
+	public void setDebug(boolean isDebug) {
+		this.isDebug = isDebug;
+	}
+
 	/**
 	 * 直接childrenの関係にあるFMAエントリを取得する
 	 * 
@@ -64,38 +83,60 @@ public abstract class TraverseFMA {
 	 * @return
 	 */
 	public Set<FMAOBOEntry> getOffsprings(FMAOBOEntry ent) {
+		if(isDebug()){
+			System.out.println("-------getOffsprings.TraverseFMA=" + ent.getName() + "----");
+		}
+		
 		offsprings.clear();
 				
 		Set<FMAOBOEntry> results = new HashSet<FMAOBOEntry>();
 
-		results = getOffspringsLoop(ent);
+		/** ループをチェックするために、pathを記録する **/
+		Stack<String> path = new Stack<String>();
+		
+		results = getOffspringsLoop(ent, path);
 		results.remove(ent); // 自分自身を除く
 		
 		return results;			
 	}
 	
-	public Set<FMAOBOEntry> getOffspringsLoop(FMAOBOEntry ent) {
+	public Set<FMAOBOEntry> getOffspringsLoop(FMAOBOEntry ent, Stack<String> path) {
+		if(isDebug()){
+			System.out.println("getOffspringsLoop.TraverseFMA=" + ent.getName());
+		}
+		
 		Set<FMAOBOEntry> children = getChildren(ent);
-
+		
 		Set<FMAOBOEntry> results = new HashSet<FMAOBOEntry>();
 		results.add(ent); // 自分自身をresultに加える
 
+		/** ループのチェック **/
+		if(path.contains(ent.getId())){
+			path.push(ent.getId());
+			System.out.println("loop found at getOffspringsLoop.TraverseFMA:" + displayLoopPath(path));
+			return results;
+		}
+		path.push(ent.getId());
+		
+		
 		for (FMAOBOEntry child : children) {
 			String cId = child.getId();
 			if (offsprings.containsKey(cId)) { // 既に計算済みのものにヒットした場合
 				results.addAll(offsprings.get(cId));
 			} else {
-				results.addAll(getOffspringsLoop(child));
+				results.addAll(getOffspringsLoop(child, path));
 			}
 		}
 
 		offsprings.put(ent.getId(), results); // 完成したものはcomplete リストに入る
 
+		path.pop();
+		
 		return results;
 	}
 
 	/**
-	 * fmaIddの祖先を取得する
+	 * fmaIdの祖先を取得する
 	 * @param fmaId
 	 * @return
 	 */
@@ -118,18 +159,35 @@ public abstract class TraverseFMA {
 	 */
 	public Set<FMAOBOEntry> getAncestors(FMAOBOEntry ent) {		
 		ancestors.clear();
+
+		/** ループをチェックするために、pathを記録する **/
+		Stack<String> path = new Stack<String>();
 		
 		Set<FMAOBOEntry> results = new HashSet<FMAOBOEntry>();		
-		results = getAncestorsLoop(ent); 
+		results = getAncestorsLoop(ent, path); 
 		results.remove(ent); // 自分自身を除く
 				
 		return results;		
 	}
 	
-	public Set<FMAOBOEntry> getAncestorsLoop(FMAOBOEntry ent) {								
+	public Set<FMAOBOEntry> getAncestorsLoop(FMAOBOEntry ent, Stack<String> path) {								
+		if(isDebug()){
+			System.out.println("getAncestorsLoop.TraverseFMA=" + ent.getId() + "=" + ent.getName());
+			System.out.println("path=" + path);
+		}
+		
 		Set<FMAOBOEntry> results = new HashSet<FMAOBOEntry>();
 		results.add(ent); // 自分自身をresultに加える
-		
+
+		/** ループのチェック **/
+		if(path.contains(ent.getId())){
+			path.push(ent.getId());
+			System.out.println("loop found at getAncestorsLoop.TraverseFMA:" + displayLoopPath(path));
+			return results;
+		}
+		path.push(ent.getId());
+
+				
 		for (FMAOBOEntry parent : getParents(ent)) {
 			if(parent == null){ continue; }  // if ent is "anatomical entity"
 			
@@ -137,12 +195,14 @@ public abstract class TraverseFMA {
 			if (ancestors.containsKey(pId)) { // 既に計算済みのものにヒットした場合
 				results.addAll(ancestors.get(pId));
 			} else {
-				results.addAll(getAncestorsLoop(parent));
+				results.addAll(getAncestorsLoop(parent, path));
 			}
 		}
 
 		ancestors.put(ent.getId(), results); // 完成したものはcomplete リストに入る
 
+		path.pop();
+		
 		return results;
 	}
 	
@@ -156,5 +216,22 @@ public abstract class TraverseFMA {
 			names.add(ent.getName());
 		}
 		System.out.println(remark + "=" + Bp3dUtility.join(names, "/"));
+	}
+	
+	
+	/**
+	 * Loop Pathを表示する
+	 * @param bp3dIds
+	 */
+	private List<String> displayLoopPath(List<String> ids){
+		List<String> names = new ArrayList<String>();
+		for(String id: ids){
+			if(fmaobo.contains(id)){
+				names.add(fmaobo.getById(id).getName());
+			}else{
+				names.add(id);
+			}
+		}
+		return names;
 	}
 }

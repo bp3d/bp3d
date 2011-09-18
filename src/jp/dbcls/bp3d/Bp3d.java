@@ -80,7 +80,7 @@ public class Bp3d {
 	 * @param id
 	 * @return
 	 */
-	public Bp3dEntry getEntry(String term){
+	public Bp3dEntry getEntry(String term){		
 		if(id2Entry.containsKey(term)){
 			return id2Entry.get(term);
 		}else if(en2Entry.containsKey(term)){
@@ -417,7 +417,6 @@ public class Bp3d {
 		boolean forDeveloper = false;
 		Bp3d bp3d = new Bp3d(forDeveloper);
 
-//		Bp3dEntry compositePrimitive = bp3d.getEntry("pancreas");
 		Bp3dEntry compositePrimitive = bp3d.getEntry("hindbrain");		
 		for(String en : bp3d.getPrimitiveOBJNames(compositePrimitive)){
 			Bp3dEntry obj = bp3d.getEntry(en);

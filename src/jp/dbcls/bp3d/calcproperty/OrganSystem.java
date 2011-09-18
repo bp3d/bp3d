@@ -22,7 +22,8 @@ public class OrganSystem {
 		this.id2en = new TreeMap<String,String>();
 		this.en2id = new TreeMap<String,String>();
 
-		id2en.put("A01","non-physical anatomical entity");	 // A01:一般解剖学		
+		id2en.put("A01.1","cardinal body part");	 // A01.01:人体の体部	
+		id2en.put("A01.2","set of immaterial anatomical entities");	 // A01.2.00: 平面、線
 		id2en.put("A02","skeletal system"); 	  // A02:骨格系
 		id2en.put("A03","articular system"); 	// A03:関節系 
 		id2en.put("A04","muscular system");	  // A04:筋肉系

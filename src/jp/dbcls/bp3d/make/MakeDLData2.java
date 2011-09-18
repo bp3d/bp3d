@@ -18,7 +18,6 @@ import jp.dbcls.bp3d.*;
  */
 public class MakeDLData2 {
 	private static String DEL = "\t";
-	private static String PHASE_NUMBER = "2"; // phase numberは常に２(どこかで廃止したい）
 	
 	private Bp3d bp3d;
 	private TraverseBp3d bp3dTraverse;
@@ -43,14 +42,12 @@ public class MakeDLData2 {
 		String downloadListFile = this.OUTDIR + "/parts_list_e.txt"; // ダウンロードするパーツのリスト(英語)
 
 		OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(
-				downloadListFile), "MS932");
+				downloadListFile), "utf-8");
 
-		osw.write("\"id\"" + DEL + "en" + DEL + "phase_number" + DEL
-				+ "organ_system" + "\n");
+		osw.write("\"id\"" + DEL + "en\n");
 
 		for (Bp3dEntry ent : bp3d.getAllEntries()) {
-			osw.write(ent.getId() + DEL + ent.getEn() + DEL + PHASE_NUMBER
-					+ DEL + ent.getOrganSystem() + "\n");
+			osw.write(ent.getId() + DEL + ent.getEn() + "\n");
 		}
 
 		osw.close();
@@ -60,13 +57,11 @@ public class MakeDLData2 {
 		osw = new OutputStreamWriter(new FileOutputStream(downloadListFileJa),
 				"MS932");
 
-		osw.write("\"id\"" + DEL + "en" + DEL + "kanji" + DEL + "kana" + DEL
-				+ "phase_number" + DEL + "organ_system" + "\n");
+		osw.write("\"id\"" + DEL + "en" + DEL + "kanji" + DEL + "kana\n");
 
 		for (Bp3dEntry ent : bp3d.getAllEntries()) {
 			osw.write(ent.getId() + DEL + ent.getEn() + DEL + ent.getKanji() + DEL
-					+ ent.getKana() + DEL + PHASE_NUMBER + DEL
-					+ ent.getOrganSystem() + "\n");
+					+ ent.getKana() + "\n");
 		}
 
 		osw.close();
@@ -78,9 +73,9 @@ public class MakeDLData2 {
 	 * @throws Exception
 	 */
 	public void makeConventionalPartOf() throws Exception {
-		String partOfFile = OUTDIR + "/coventional_part_of.txt";
+		String partOfFile = OUTDIR + "/conventional_part_of.txt";
 		OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(
-				partOfFile), "MS932");
+				partOfFile), "utf-8");
 
 		osw.write("\"id\"" + DEL + "name" + DEL + "part id" + DEL + "part name"
 				+ "\n");
@@ -120,7 +115,7 @@ public class MakeDLData2 {
 	private void makeCompositePartsList() throws Exception {
 		File cpList = new File(OUTDIR + "/composite_parts.txt");
 		FileOutputStream fos = new FileOutputStream(cpList, false);
-		OutputStreamWriter out = new OutputStreamWriter(fos, "MS932");
+		OutputStreamWriter out = new OutputStreamWriter(fos, "utf-8");
 		BufferedWriter bw = new BufferedWriter(out);
 		
 		bw.write("composite id" + DEL + "composite name" + DEL +

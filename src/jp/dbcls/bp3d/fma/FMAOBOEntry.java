@@ -204,9 +204,20 @@ public class FMAOBOEntry {
 		System.out.println("name=" + getName());
 		System.out.println("def=" + getDef());
 		System.out.println("exact_synonym=" + getExactSynonym().toString());
-		System.out.println("is_a=" + getIsA().toString());
-		System.out.println("reverse_is_a=" + getReverseIsA().toString());
-		System.out.println("has_part=" + getHasPart().toString());
-		System.out.println("part_of=" + getPartOf().toString());
+		System.out.println("is_a=" + getIsA().getId());
+		System.out.print("reverse_is_a=");
+		for(FMAOBOEntry ent : getReverseIsA()){
+			System.out.print(ent.getId() + "=" + ent.getName() + "/");
+		}
+		System.out.println("");	
+		System.out.print("has_part=");
+		for(FMAOBOEntry ent :getHasPart()){
+			System.out.print(ent.getId() + "=" + ent.getName() + "/");
+		}	
+		System.out.println("");	
+		System.out.print("part_of=");
+		for(FMAOBOEntry ent :getPartOf()){
+			System.out.print(ent.getId() + "=" + ent.getName() + "/");
+		}	
 	}
 }

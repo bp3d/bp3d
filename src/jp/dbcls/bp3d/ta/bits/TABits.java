@@ -65,8 +65,8 @@ public class TABits {
 	final String OUTFILE = Bp3dProperties.getString("bp3d.datadir") + 
 		Bp3dProperties.getString("bp3d.dataversion") + "/conf/TA/ta2fma.txt";
 
-	List<TABitsEntry> entries = new ArrayList<TABitsEntry>();	
-		
+	List<TABitsEntry> entries = new ArrayList<TABitsEntry>();				
+	
 	FMAOBO fmaobo;
 			
 	public TABits() throws Exception{

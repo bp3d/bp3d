@@ -111,6 +111,55 @@ public class MemberOfTreeForConventionalTree extends ExtendedMemberOfTree {
 		return retainTA(getAncestors(ent));
 	}
 			
+	
+	private static void debugGetAncestors(String organName) throws Exception {
+		FMAOBO fmaobo = new FMAOBO();
+		TA ta = new TA(fmaobo);
+		MemberOfTreeForConventionalTree memberOfTree = 
+			new MemberOfTreeForConventionalTree(fmaobo, ta);
+		memberOfTree.setDebug(true);
+		
+		FMAOBOEntry organ = fmaobo.getByName(organName);
+				
+		Set<String> display = new HashSet<String>();
+		for(FMAOBOEntry ans : memberOfTree.getTAParents(organ)){
+			display.add(ans.getName());
+		}						
+		System.out.println("---------TA parents of " + organName + "=" + display);
+
+		display.clear();
+		for(FMAOBOEntry ans : memberOfTree.getTAAncestors(organ)){
+			display.add(ans.getName());
+		}						
+		System.out.println("---------TA ancestors of " + organName + "=" + display);
+
+		display.clear();
+		for(FMAOBOEntry ans : memberOfTree.getAncestors(organ)){
+			display.add(ans.getName());
+		}						
+		System.out.println("---------FMA ancestors of " + organName + "=" + display);			
+	}
+
+	
+	private static void debugGetOffsprings(String organName) throws Exception {
+		FMAOBO fmaobo = new FMAOBO();
+		TA ta = new TA(fmaobo);
+		MemberOfTreeForConventionalTree memberOfTree = 
+			new MemberOfTreeForConventionalTree(fmaobo, ta);
+		memberOfTree.setDebug(true);
+		
+		FMAOBOEntry organ = fmaobo.getByName(organName);
+
+		Set<String> display = new HashSet<String>();				
+
+		display.clear();
+		for(FMAOBOEntry ans : memberOfTree.getOffsprings(organ)){
+			display.add(ans.getName());
+		}						
+		System.out.println("---------FMA offsprings of " + organName + "=" + display);			
+	}
+
+	
 	/**
 	 * サンプルコード
 	 * @param args
@@ -119,52 +168,8 @@ public class MemberOfTreeForConventionalTree extends ExtendedMemberOfTree {
 		StopWatch s = new StopWatch();
 		s.start();
 
-		FMAOBO fmaobo = new FMAOBO();
-		TA ta = new TA(fmaobo);
-		MemberOfTreeForConventionalTree memberOfTree = 
-			new MemberOfTreeForConventionalTree(fmaobo, ta);
-/**
-		{
-			FMAOBOEntry lung = fmaobo.getByName("left fusiform gyrus");
-			lung = fmaobo.getByName("pronator quadratus");
-					
-			Set<String> display = new HashSet<String>();
-			for(FMAOBOEntry ans : memberOfTree.getTAParents(lung)){
-				display.add(ans.getName());
-			}						
-			System.out.println("TA parents of pronator quadratus=" + display);
-
-		display.clear();
-		for(FMAOBOEntry ans : memberOfTree.getTAAncestors(lung)){
-			display.add(ans.getName());
-		}						
-		System.out.println("TA ancestors of pronator quadratus=" + display);
-	
-		display.clear();
-		for(FMAOBOEntry ans : memberOfTree.getAncestors(lung)){
-			display.add(ans.getName());
-		}						
-		System.out.println("TA ancestors of pronator quadratus by super=" + display);		
-		}
-**/
-		
-		{
-//			String startName = "trapezius";
-			String startName = "dorsal digital vein of right hand";
-
-			if(!fmaobo.contains(startName)){
-				System.out.println(startName + " is not contained in FMAOBO");				
-			}
-			FMAOBOEntry start = fmaobo.getByName(startName);
-						
-			Set<String> display = new HashSet<String>();
-//			for(FMAOBOEntry ans : memberOfTree.getTAParents(start)){
-//			for(FMAOBOEntry ans : memberOfTree.getTAAncestors(start)){
-			for(FMAOBOEntry ans : memberOfTree.getAncestors(start)){
-				display.add(ans.getName());
-			}						
-			System.out.println("TA parents of " + startName + "=" + display);
-		}
+		String organName = "mouth";		
+		debugGetAncestors(organName);
 		
 		s.stop();
 

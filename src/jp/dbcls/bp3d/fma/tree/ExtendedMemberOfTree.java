@@ -14,14 +14,18 @@ import jp.dbcls.bp3d.util.StopWatch;
  */
 
 public class ExtendedMemberOfTree extends TraverseFMA {		
-	FMA fma = new FMA();
+	FMA fma;
 	
-	public ExtendedMemberOfTree() throws Exception{}
+	public ExtendedMemberOfTree() throws Exception{
+		fma = new FMA(this.fmaobo);
+	}
 	
+
 	public ExtendedMemberOfTree(FMAOBO fmaobo) throws Exception{
 		super(fmaobo);
+		fma = new FMA(fmaobo);
 	}
-
+	
 	@Override
 	public Set<FMAOBOEntry> getChildren(FMAOBOEntry ent) {
 		Set<FMAOBOEntry> ret = new HashSet<FMAOBOEntry>();
@@ -29,23 +33,56 @@ public class ExtendedMemberOfTree extends TraverseFMA {
 		ret.addAll(ent.getReverseIsA());
 		ret.addAll(ent.getHasPart());
 		
-		/** segment of xxxx のエントリが存在すれば、そのchildrenも加える **/
-		String name = "segment of " + ent.getName();
-		if(fmaobo.contains(name)){
-			for(FMAOBOEntry segChild : fmaobo.getByName(name).getReverseIsA()){
-				if(!segChild.getName().startsWith("segment of ")){
-					ret.add(segChild);
+		/** segment/subdivision of xxxx のエントリが存在すれば、そのchildrenも加える **/
+		{
+			List<String> regions = new ArrayList<String>();
+			regions.add("segment of ");
+			regions.add("subdivision of ");
+			regions.add("musculature of ");
+			regions.add("muscles of ");
+
+			for(String region : regions){
+				String name = regions + ent.getName();
+				if(fmaobo.contains(name)){
+					for(FMAOBOEntry segChild : fmaobo.getByName(name).getReverseIsA()){
+						if(!segChild.getName().startsWith(region)){
+							ret.add(segChild);
+						}
+					}	
 				}
 			}
 		}
-		
+			
 		/** "left B part of A" and "right B part of A" であれば
 		 *  B partof A も加える。
 		**/
-		for(FMAOBOEntry child : ent.getHasPart()){		
-			if(fma.hasLeftPlusRight(child.getName())){
-				ret.add(fma.getLeftPlusRight(child));
-			}			
+		{
+			for(FMAOBOEntry child : ent.getHasPart()){						
+				if(fma.hasLeftPlusRight(child.getName())){
+					ret.add(fma.getLeftPlusRight(child));
+				}			
+			}
+		}
+				
+		/**
+		 * musculature of A 　と　muscle of Aを同一視する
+		 */
+		{
+			Map<String, String> synonyms = new HashMap<String, String>();
+			synonyms.put("musculature of ", "muscle of ");
+			synonyms.put("muscle of ", "musculature of ");
+						
+			for(String replacedStr: synonyms.keySet()){
+				String synonymStr = "";				
+				if(ent.getName().startsWith(replacedStr)){
+					synonymStr = ent.getName().replace(replacedStr, synonyms.get(replacedStr));
+					if(fmaobo.contains(synonymStr)){
+						FMAOBOEntry synonym = fmaobo.get(synonymStr);
+						ret.addAll(synonym.getReverseIsA());
+						ret.addAll(synonym.getHasPart());
+					}
+				}
+			}
 		}
 		
 		return ret;
@@ -55,94 +92,128 @@ public class ExtendedMemberOfTree extends TraverseFMA {
 	public Set<FMAOBOEntry> getParents(FMAOBOEntry ent) {
 		Set<FMAOBOEntry> ret = new HashSet<FMAOBOEntry>();
 		
-		FMAOBOEntry isA = ent.getIsA();
-				
+		FMAOBOEntry isA = ent.getIsA();				
 		if(isA != null){		
-			ret.add(isA);			
-			/** 
-		 * organ A is a segment of organ B 
-		 *  -> organ A is a member of B
+			ret.add(isA);
+		}
+		
+		ret.addAll(ent.getPartOf());		
+		
+		String organName = ent.getName();
+		
+		/** 
+		 * organ A is-a/part-of segment/subdivision of organ B 
+		 *  -> organ A is a member-of B
 		 */
-			String isAName = isA.getName();
-			if(isAName.contains("segment of ")){
-				isAName = isAName.replace("segment of ", "");
-				if(fmaobo.contains(isAName)){
-					ret.add(fmaobo.getByName(isAName));
+		{
+			List<String> regions = new ArrayList<String>();
+			regions.add("segment of ");
+			regions.add("subdivision of ");
+			regions.add("musculature of ");
+			regions.add("muscles of ");
+			
+			for(String region : regions){
+				if(organName.startsWith(region)){
+					String regionLessName = organName.replace(region, "");
+					if(isDebug){
+						System.out.println("getParents.ExtendedMemberOftree=" + organName);
+					}
+					if(fmaobo.contains(regionLessName)){
+						ret.add(fmaobo.getByName(regionLessName));
+					}
 				}
 			}
 		}
 
 		/** 
-		 * "left B part of A" and "right B part of A" であれば
-		 *  B part of A も加える。
+		 * "left B is-a/part-of A" and "right B is-a/part-of of A" であれば
+		 *  B member-of A も加える。
 		**/
-		String organName = ent.getName();
-		if(fma.hasLeft(organName) && fma.hasRight(organName)){
-
-			FMAOBOEntry left = fma.getLeft(organName);
-			FMAOBOEntry right = fma.getRight(organName);
-			Set<FMAOBOEntry> toAdd = new HashSet<FMAOBOEntry>();
-			toAdd.addAll(left.getPartOf());
-			toAdd.retainAll(right.getPartOf());
-			ret.addAll(toAdd);
-			ret.remove(ent);  // ent自身が含まれている場合は除く（ループになる)
-/**
-			if(toAdd.size() > 0){
-				System.out.println("left+right=" + organName);
-				System.out.println("getLeft()=" + left.getName());
-				System.out.println("getRight()=" + right.getName());
-				display(left.getPartOf(), "part of=" + left.getName());
-				display(right.getPartOf(), "part of=" + right.getName());
-				display(toAdd, "union");
+		{
+			if(fma.hasLeft(organName) && fma.hasRight(organName)){
+			
+				FMAOBOEntry left = fma.getLeft(organName);
+				FMAOBOEntry right = fma.getRight(organName);
+				Set<FMAOBOEntry> toAdd = new HashSet<FMAOBOEntry>();
+				toAdd.addAll(left.getPartOf());
+				toAdd.retainAll(right.getPartOf());
+				ret.addAll(toAdd);
+				ret.remove(ent);  // ent自身が含まれている場合は除く（ループになる)
+			
+				if(isDebug == true && toAdd.size() > 0){
+					System.out.println("Extended at getParents.ExtendedMemberOfTree for " + organName);
+					System.out.println("left+right=" + organName);
+					System.out.println("getLeft()=" + left.getName());
+					System.out.println("getRight()=" + right.getName());
+					display(left.getPartOf(), "left.getPartOf()=" + left.getName());
+					display(right.getPartOf(), "right.getPartOf()=" + right.getName());
+					display(toAdd, "toAdd(intersection of left/right)=");
+					display(ret, "ret=");
+				}
 			}
-**/			
+		}
+		/**
+		 * musculature of A 　と　muscle of Aを同一視する
+		 */
+		{
+			Map<String, String> synonyms = new HashMap<String, String>();
+			synonyms.put("musculature of ", "muscle of ");
+			synonyms.put("muscle of ", "musculature of ");
+						
+			for(String replacedStr: synonyms.keySet()){
+				String synonymStr = "";				
+				if(ent.getName().startsWith(replacedStr)){
+					synonymStr = ent.getName().replace(replacedStr, synonyms.get(replacedStr));
+					if(fmaobo.contains(synonymStr)){
+						FMAOBOEntry synonym = fmaobo.get(synonymStr);
+						if(isDebug){
+							System.out.println("getParents.ExtendedMemberOfTree=" + ent.getName() + "==>" + synonym.getName());
+						}
+						ret.add(synonym.getIsA());
+						ret.addAll(synonym.getPartOf());
+					}
+				}
+			}
 		}
 		
-		ret.addAll(ent.getPartOf());
+
 				
 		return ret;
 	}
 	
+	
+	private static void debug(String organName) throws Exception {
+		FMAOBO fmaobo = new FMAOBO();
+		ExtendedMemberOfTree memberOfTree = 
+			new ExtendedMemberOfTree(fmaobo);
+		memberOfTree.setDebug(true);
+		
+		FMAOBOEntry organ = fmaobo.getByName(organName);
+				
+		Set<String> display = new HashSet<String>();
+		for(FMAOBOEntry ans : memberOfTree.getParents(organ)){
+			display.add(ans.getName());
+		}						
+		System.out.println("ExtendedMemberOf parents of " + organName + "=" + display);
+
+		display.clear();
+		for(FMAOBOEntry ans : memberOfTree.getAncestors(organ)){
+			display.add(ans.getName());
+		}						
+		System.out.println("ExtendedMemberOf ancestors of " + organName + "=" + display);
+	}
+	
+	
 	/**
-	 * サンプルコード
+	 * テストコード
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
 		StopWatch s = new StopWatch();
 		s.start();
 
-		FMAOBO fmaobo = new FMAOBO();
-		ExtendedMemberOfTree combinedFMA = new ExtendedMemberOfTree(fmaobo);
-
-		FMAOBOEntry ent = fmaobo.getByName("lung");
-		ent = fmaobo.getByName("anterior compartment of forearm");	
-		ent = fmaobo.getByName("pronator quadratus");
-//		ent = fmaobo.getByName("left anconeus");
-		ent = fmaobo.getByName("anconeus");
-		ent = fmaobo.getByName("midbrain tectum");
-//		ent = fmaobo.getByName("midbrain");
-		
-		List<String> display = new ArrayList<String>();
-
-
-		for(FMAOBOEntry child : combinedFMA.getChildren(ent)){
-			display.add(child.getName());
-		}								
-		System.out.println("children=" + display);		
-		display.clear();
-
-		for(FMAOBOEntry parent : combinedFMA.getParents(ent)){
-			display.add(parent.getName());
-		}						
-		System.out.println("parents=" + display);
-		display.clear();
-
-/**		
-		for(FMAOBOEntry ans : combinedFMA.getAncestors(ent)){
-			display.add(ans.getName());
-		}						
-		System.out.println("anscestors=" + display);
-**/
+		String organName = "right splenius capitis";
+		debug(organName);
 		
 		s.stop();
 

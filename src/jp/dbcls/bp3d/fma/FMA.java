@@ -22,7 +22,9 @@ public class FMA {
 	}
 	
 	
-	public FMA(FMAOBO fmaobo) throws Exception {		
+	public FMA(FMAOBO fmaobo) throws Exception {
+		this.fmaobo = fmaobo;  
+		
 		/** is-a treeをつくる **/
 		isA = new IsATree(fmaobo);
 		

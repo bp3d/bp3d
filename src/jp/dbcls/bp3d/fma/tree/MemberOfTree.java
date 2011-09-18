@@ -4,6 +4,7 @@ import java.util.*;
 
 import jp.dbcls.bp3d.Bp3dTree;
 import jp.dbcls.bp3d.fma.*;
+import jp.dbcls.bp3d.ta.TA;
 import jp.dbcls.bp3d.util.StopWatch;
 
 public class MemberOfTree extends TraverseFMA {		
@@ -29,43 +30,38 @@ public class MemberOfTree extends TraverseFMA {
 		return ret;
 	}
 	
+	private static void debug(String organName) throws Exception {
+		FMAOBO fmaobo = new FMAOBO();
+		MemberOfTree memberOfTree = 
+			new MemberOfTree(fmaobo);
+		memberOfTree.setDebug(true);
+		
+		FMAOBOEntry organ = fmaobo.getByName(organName);
+				
+		Set<String> display = new HashSet<String>();
+		for(FMAOBOEntry ans : memberOfTree.getParents(organ)){
+			display.add(ans.getName());
+		}						
+		System.out.println("MemberOf parents of " + organName + "=" + display);
+
+		display.clear();
+		for(FMAOBOEntry ans : memberOfTree.getAncestors(organ)){
+			display.add(ans.getName());
+		}						
+		System.out.println("MemberOf ancestors of " + organName + "=" + display);
+	}
+	
+	
 	/**
-	 * サンプルコード
+	 * テストコード
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
 		StopWatch s = new StopWatch();
 		s.start();
 
-		FMAOBO fmaobo = new FMAOBO();
-		MemberOfTree combinedFMA = new MemberOfTree(fmaobo);
-
-		FMAOBOEntry lung = fmaobo.getByName("lung");
-		lung = fmaobo.getByName("anterior compartment of forearm");	
-		lung = fmaobo.getByName("pronator quadratus");
-		lung = fmaobo.getByName("Left iliocostalis thoracis");
-		lung = fmaobo.getByName("brachium of right inferior colliculus");
-
-		Set<String> display = new TreeSet<String>();
-
-		for(FMAOBOEntry child : combinedFMA.getChildren(lung)){
-			display.add(child.getName());
-		}								
-		System.out.println("children of lung=" + display);		
-		display.clear();
-		
-		for(FMAOBOEntry parent : combinedFMA.getParents(lung)){
-			display.add(parent.getName());
-		}						
-		System.out.println("parents of lung=" + display);
-		display.clear();
-		
-		for(FMAOBOEntry ans : combinedFMA.getAncestors(lung)){
-			display.add(ans.getName());
-		}						
-		System.out.println("anscestors of lung=" + display);
-		System.out.println("anscestors of lung=" + display.contains("midbrain"));
-		
+		String organName = "Physical anatomical entity";		
+		debug(organName);
 		
 		s.stop();
 

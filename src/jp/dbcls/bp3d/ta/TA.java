@@ -142,8 +142,12 @@ public class TA {
 		
 		while ((line = br.readLine()) != null) {
 			if(line.startsWith("#")){ continue; }
-			TAEntry ent = createTAEntry();
+
 			String[] data = Pattern.compile("\t").split(line);
+			
+//			if(data[7].trim().equals("NOTIDENTICAL")){ continue; } // ta2fma.txtのTYPE=NOTIDENTICALは読みこまない
+			
+			TAEntry ent = createTAEntry();
 			String taId = data[0].trim();
 			ent.setTaId(taId);
 			double taTab = Double.parseDouble(data[1].trim().replaceAll(">", ""));

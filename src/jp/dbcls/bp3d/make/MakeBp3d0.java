@@ -97,14 +97,14 @@ public class MakeBp3d0 {
 		System.out.println("addOBJAsPrimitive():NumOfEntries=" + id2Entry.size());					
 		
 		/** TAのインデント情報をmember-of階層として取り込む **/
-		makeMemberOfBasedOnTA();
+		addTAMemberOf();
 		
 		/** kaorif.xlsのmember-ofを追加 **/
 		addKaorifMemberOf();
 		
 		/** FMAのmember-ofとTAのインデント情報を使って、member-of関係を作成する **/
 		makeMemberOf();
-		
+
 		bp3dTraverse = new TraverseBp3d(bp3dTree);
 		
 		/** 冗長なmember-ofを削除する **/
@@ -149,7 +149,7 @@ public class MakeBp3d0 {
 		File appendDir = new File(APPENDDIR);
 		Bp3dUtility.clean(appendDir);
 		if (appendDir.mkdir() == false) {
-			System.err.println("ConstructBp3d: mkdir failed for " + APPENDDIR);
+			System.err.println("makeOutputDir.MakeBp3d0: mkdir failed for " + APPENDDIR);
 		}	
 	}	
 	
@@ -168,7 +168,7 @@ public class MakeBp3d0 {
 	 * TAのインデント情報をmember-of階層に取り込む
 	 * ただし、FMAでchildren, parentの関係がある場合は取り込まない。
 	 */
-	protected void makeMemberOfBasedOnTA(){		
+	protected void addTAMemberOf(){		
 		TATree taTree = ta.getTree();
 
 		for(String child : taTree.getMemberOfs().keySet()){
@@ -224,7 +224,7 @@ public class MakeBp3d0 {
 			}
 		}
 		
-		return ret;					
+		return ret;
 	}
 	
 	/**
@@ -702,7 +702,7 @@ public class MakeBp3d0 {
 	protected void trimRedundantMemberOf() throws Exception {		
 		for(String cid : getAllIds()){
 			for(String pid : getParents(cid)){
-				/** edge cidからpidの他の経路があれば直接経路は削除する **/		
+				/** edge cidからpidへの他の経路があれば直接経路は削除する **/		
 				bp3dTree.removeMemberOf(cid, pid);
 				bp3dTree.removeReverseMemberOf(pid, cid);
 				if(this.bp3dTraverse.getAncestors(cid).contains(pid)){
@@ -937,11 +937,15 @@ public class MakeBp3d0 {
 					type = "FMA";
 				}
 
-				if(!contains(child) || !contains(parent)){
-					System.out.println(child + "<->" + parent + "*");
+				if(!contains(child)){
+					System.out.println("child(" + child + ") is not contained. parent="+ parent); 
 					continue;
-				}
-				
+				}else if(!contains(parent)){
+					System.out.println("parent(" + parent + ") is not contained. child=" + child + "(" + getEntry(child).getEn() + ")"); 
+					continue;
+				}				
+			
+			
 				bw.write(getEntry(child).getEn() + "\t" + getEntry(parent).getEn() + "\t"
 						+ type + "\n");
 			}

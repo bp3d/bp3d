@@ -120,6 +120,12 @@ public class FMAOBO {
 		StringTokenizer st = new StringTokenizer(obo, "\n");
 		while (st.hasMoreTokens()) {
 			String line = st.nextToken();
+
+			if(line.startsWith("-")){ continue; } // -で始まる行は読み込まない。			
+			if(line.startsWith("+")){ // +で始まる行は追加した行(relationship)
+				line = line.substring(1);
+			} 
+			
 			if (line.startsWith("relationship:") || line.startsWith("is_a:")) {
 			} else if (line.startsWith("synonym:")) {
 				entry.parseExactSynonym(line);
@@ -380,8 +386,13 @@ public class FMAOBO {
 		}
 	}
 	
+	/**
+	 * テストコード
+	 * @param args
+	 * @throws Exception
+	 */
 	public static void main(String[] args) throws Exception {
 		FMAOBO fmaobo = new FMAOBO();
-		System.out.println(fmaobo.getByName("cerebrum"));
+		fmaobo.getByName("physical anatomical entity").display();
 	}
 }
